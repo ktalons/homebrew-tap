@@ -49,7 +49,7 @@ jobs:
             TAG=$(curl -sSL "https://api.github.com/repos/${OWNER_REPO}/releases/latest" | jq -r .tag_name)
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          URL=$(curl -sSL "https://api.github.com/repos/${OWNER_REPO}/releases/tags/${TAG}" | jq -r ".assets[] | select(.name == \"${ASSET_NAME}\") | .browser_download_url")
+          URL=$(curl -sSL "https://api.github.com/repos/${OWNER_REPO}/releases/tags/${TAG}" | jq -r --arg name "$ASSET_NAME" '.assets // [] | .[] | select(.name == $name) | .browser_download_url')
           if [ -z "$URL" ] || [ "$URL" = "null" ]; then
             echo "Asset not found for $TAG" >&2; exit 1
           fi
