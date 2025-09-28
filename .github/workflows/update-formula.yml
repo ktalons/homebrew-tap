@@ -10,6 +10,8 @@ on:
         description: "Asset filename to select from the release (e.g., PCAPpullerGUI-macos)."
         required: false
         default: PCAPpullerGUI-macos
+  release:
+    types: [published, prereleased]
   schedule:
     - cron: '0 6 * * *'
 
@@ -47,11 +49,14 @@ jobs:
           OWNER_REPO: ktalons/daPCAPpuller
           ASSET_NAME_INPUT: ${{ github.event.inputs.asset_name }}
           INPUT_TAG: ${{ github.event.inputs.tag }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           set -euo pipefail
-          # Resolve TAG: prefer input, else latest stable, else most recent (including prereleases)
+          # Resolve TAG: prefer workflow input, then release event tag, else latest stable, else most recent (including prereleases)
           if [ -n "${INPUT_TAG:-}" ]; then
             TAG="$INPUT_TAG"
+          elif [ -n "${RELEASE_TAG:-}" ]; then
+            TAG="$RELEASE_TAG"
           else
             TAG=$(curl -sS \
               -H "Accept: application/vnd.github+json" \
