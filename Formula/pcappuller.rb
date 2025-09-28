@@ -3,7 +3,7 @@ class Pcappuller < Formula
   homepage "https://github.com/ktalons/daPCAPpuller"
   version "0.1.0"
   url "https://github.com/ktalons/daPCAPpuller/releases/download/v0.1.0/PCAPpullerGUI-macos"
-  sha256 "b8fa548603229e0984a84fb44326e4b046429b7470cd6192c7a38642d91dfb8f"
+  sha256 "12892ae874d1cf12d0db930289fe12b19c685c613dee2c7f9666e1c4709cb898"
   license "MIT"
 
   def install
