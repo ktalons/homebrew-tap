@@ -47,7 +47,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl -sSLo asset "$${{ steps.meta.outputs.url }}"
+          curl -sSLo asset "${{ steps.meta.outputs.url }}"
           SHA=$(sha256sum asset | awk '{print $1}')
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
 
