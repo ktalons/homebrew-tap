@@ -1,4 +1,4 @@
-# kylev/homebrew-tap
+# ktalons/homebrew-tap
 
 [![Update Homebrew Formula](https://github.com/ktalons/homebrew-tap/actions/workflows/update-formula.yml/badge.svg?branch=main)](https://github.com/ktalons/homebrew-tap/actions/workflows/update-formula.yml)
 
@@ -11,8 +11,8 @@ A Homebrew tap for distributing custom formulas. Currently includes:
 - Add the tap and install the formula:
 
 ```bash
-brew tap kylev/tap
-brew install kylev/tap/pcappuller
+brew tap ktalons/tap
+brew install ktalons/tap/pcappuller
 ```
 
 Notes
@@ -49,7 +49,7 @@ GH_TOKEN={{GITHUB_TOKEN_WITH_REPO_WRITE}}
 curl -sS -X POST \
   -H "Accept: application/vnd.github+json" \
   -H "Authorization: Bearer ${GH_TOKEN}" \
-  https://api.github.com/repos/kylev/homebrew-tap/dispatches \
+https://api.github.com/repos/ktalons/homebrew-tap/dispatches
   -d '{"event_type":"update-formula"}'
 ```
 
@@ -72,3 +72,8 @@ Dry-run mode
 - Formula lives at `Formula/pcappuller.rb`.
 - If you change naming of upstream assets, update the workflow default `asset_name` or trigger with a specific `asset_name`.
 - PRs are welcome if we add more formulas or improve CI.
+
+## Templates
+
+- Formula/example_tool.rb: Template for installing a prebuilt single-binary release (download URL + sha256; uses bin.install).
+- Formula/template_go_project.rb: Template for building and installing a Go project from source (uses go build with std_go_args).
