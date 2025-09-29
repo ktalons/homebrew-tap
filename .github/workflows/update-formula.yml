@@ -183,8 +183,25 @@ jobs:
           fetch-depth: 0
       - name: Update Homebrew and run checks
         shell: bash
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           brew update --quiet || true
-          brew style Formula/pcappuller.rb
-          brew audit --new --strict Formula/pcappuller.rb || brew audit --strict Formula/pcappuller.rb
+
+          # Derive tap token and use formula name instead of a filesystem path
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          REPO="${GITHUB_REPOSITORY##*/}"
+          SHORT_TAP="${REPO#homebrew-}"
+          FORMULA="pcappuller"
+          TOKEN="${OWNER}/${SHORT_TAP}/${FORMULA}"
+
+          echo "Using formula token: ${TOKEN}"
+          # Style check using formula token; fallback to unqualified name if needed
+          brew style --formula "${TOKEN}" || brew style --formula "${FORMULA}"
+
+          # Audit must not use a path; use the formula token, with fallbacks
+          brew audit --new --strict "${TOKEN}" || \
+          brew audit --strict "${TOKEN}" || \
+          brew audit --new --strict "${FORMULA}" || \
+          brew audit --strict "${FORMULA}"
