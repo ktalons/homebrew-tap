@@ -24,7 +24,7 @@ This repo has an automated workflow that updates the formula to the latest upstr
 Triggers
 - Manual: Run the “Update Homebrew Formula” workflow from the Actions tab.
 - Scheduled: Daily at 06:00 UTC.
-- repository_dispatch: Can be triggered via API from the upstream repo or any caller with repo write access.
+- Repository Dispatch: Can be triggered via API from the upstream repo or any caller with repo write access.
 
 Manual run examples
 - From the Actions UI: you can optionally specify `tag` and `asset_name`. If left blank, the workflow attempts to auto-detect the latest release and macOS asset.
