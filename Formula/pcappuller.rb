@@ -1,8 +1,8 @@
 class Pcappuller < Formula
-  desc "PCAPpuller GUI: fast PCAP window selector, merger, trimmer"
+  desc "Fast PCAP window selector, merger, and trimmer with GUI"
   homepage "https://github.com/ktalons/daPCAPpuller"
-  version "0.1.2"
   url "https://github.com/ktalons/daPCAPpuller/releases/download/v0.1.2/PCAPpullerGUI-macos.zip"
+  version "0.1.2"
   sha256 "33494ebffa5e273f118849c1bf79febc3aaa94b3996de7c7a34425d7b964c544"
   license "MIT"
 
