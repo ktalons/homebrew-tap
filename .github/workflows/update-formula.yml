@@ -197,7 +197,8 @@ jobs:
           TOKEN="${OWNER}/${SHORT_TAP}/${FORMULA}"
 
           # Ensure the tap is available to Homebrew so token resolution works
-          brew tap "${OWNER}/${SHORT_TAP}" "https://github.com/${OWNER}/homebrew-${SHORT_TAP}.git" --force-auto-update || true
+          # Use plain tap without deprecated/invalid flags to ensure installation
+          brew tap "${OWNER}/${SHORT_TAP}" "https://github.com/${OWNER}/homebrew-${SHORT_TAP}.git" || true
 
           echo "Using formula token: ${TOKEN}"
           # Style check using formula token; fallback to unqualified name if needed
