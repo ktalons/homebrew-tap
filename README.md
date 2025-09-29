@@ -1,5 +1,7 @@
 # kylev/homebrew-tap
 
+[![Update Homebrew Formula](https://github.com/ktalons/homebrew-tap/actions/workflows/update-formula.yml/badge.svg?branch=main)](https://github.com/ktalons/homebrew-tap/actions/workflows/update-formula.yml)
+
 A Homebrew tap for distributing custom formulas. Currently includes:
 
 - pcappuller: Installs the PCAPpuller GUI binary from the upstream project at https://github.com/ktalons/daPCAPpuller
