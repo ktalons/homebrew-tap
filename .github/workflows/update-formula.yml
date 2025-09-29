@@ -196,6 +196,9 @@ jobs:
           FORMULA="pcappuller"
           TOKEN="${OWNER}/${SHORT_TAP}/${FORMULA}"
 
+          # Ensure the tap is available to Homebrew so token resolution works
+          brew tap "${OWNER}/${SHORT_TAP}" "https://github.com/${OWNER}/homebrew-${SHORT_TAP}.git" --force-auto-update || true
+
           echo "Using formula token: ${TOKEN}"
           # Style check using formula token; fallback to unqualified name if needed
           brew style --formula "${TOKEN}" || brew style --formula "${FORMULA}"
