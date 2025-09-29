@@ -10,13 +10,23 @@ on:
         description: "Asset filename to select from the release (e.g., PCAPpullerGUI-macos)."
         required: false
         default: PCAPpullerGUI-macos
+      dry_run:
+        description: "If 'true', perform all steps but do not commit/push. Shows diff and validations."
+        required: false
+        default: "false"
   release:
     types: [published, prereleased]
+  repository_dispatch:
+    types: [update-formula]
   schedule:
     - cron: '0 6 * * *'
 
 permissions:
   contents: write
+
+concurrency:
+  group: update-formula-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   update:
@@ -84,9 +94,19 @@ jobs:
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/${OWNER_REPO}/releases/tags/${TAG}")
-          URL=$(echo "$release_json" | jq -r --arg name "$ASSET_NAME" '.assets // [] | .[] | select(.name == $name) | .browser_download_url')
+
+          # Try exact name match first; if not found, fall back to a macOS-pattern match
+          URL=$(echo "$release_json" | jq -r --arg name "$ASSET_NAME" '
+            (.assets // []) as $a |
+            ([$a[] | select(.name == $name) | .browser_download_url] |
+             .[0]) // (
+            [$a[] | select((.name | test("(?i)(macos|darwin|apple|universal)"))) | .browser_download_url] |
+             .[0]) // empty
+          ')
+
           if [ -z "$URL" ] || [ "$URL" = "null" ]; then
-            echo "Asset '$ASSET_NAME' not found for tag $TAG" >&2; exit 1
+            echo "Asset '$ASSET_NAME' not found for tag $TAG, and no macOS asset matched fallback pattern" >&2
+            exit 1
           fi
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
@@ -99,6 +119,26 @@ jobs:
           chmod +x asset || true
           SHA=$(sha256sum asset | awk '{print $1}')
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Dry-run validations (URL reachability, hash, and planned diff)
+        shell: bash
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          URL: ${{ steps.meta.outputs.url }}
+          SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          set -euo pipefail
+          # URL reachability
+          curl -sSI "$URL" | awk 'BEGIN{rc=1} /HTTP\//{status=$2} /Content-Length:/ {len=$2} END{ if (status ~ /^2|3/){rc=0}; printf("Status: %s\nLength: %s\n", status, len); exit rc }'
+
+          # Recompute sha256 and compare
+          SHA2=$(sha256sum asset | awk '{print $1}')
+          if [ "$SHA2" != "$SHA" ]; then
+            echo "Recomputed SHA ($SHA2) does not match computed SHA ($SHA)" >&2
+            exit 1
+          fi
+
+          echo "Validation passed: URL reachable and SHA consistent"
 
       - name: Update Formula
         shell: bash
@@ -115,7 +155,12 @@ jobs:
                       -e "s/^  sha256 \".*\"/  sha256 \"$SHA\"/" "$FORMULA"
           rm -f "$FORMULA.bak"
 
+      - name: Show planned diff (no commit yet)
+        run: |
+          git --no-pager diff -- Formula/pcappuller.rb || true
+
       - name: Commit and Push
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true' }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -125,3 +170,21 @@ jobs:
           # Rebase onto the latest remote to avoid non-fast-forward rejections
           git pull --rebase origin main || true
           git push origin HEAD:main
+
+  brew_audit:
+    name: Brew style/audit
+    needs: update
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true' }}
+    runs-on: macos-latest
+    steps:
+      - name: Checkout tap repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Update Homebrew and run checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          brew update --quiet || true
+          brew style Formula/pcappuller.rb
+          brew audit --new --strict Formula/pcappuller.rb || brew audit --strict Formula/pcappuller.rb
