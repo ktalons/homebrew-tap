@@ -2,17 +2,25 @@
 
 [![Update Homebrew Formula](https://github.com/ktalons/homebrew-tap/actions/workflows/update-formula.yml/badge.svg?branch=main)](https://github.com/ktalons/homebrew-tap/actions/workflows/update-formula.yml)
 
-A Homebrew tap for distributing custom formulas. Currently includes:
+A Homebrew tap for distributing custom formulas and casks. Currently includes:
 
-- pcappuller: Installs the PCAPpuller GUI binary from the upstream project at https://github.com/ktalons/daPCAPpuller
+- (Formula) pcappuller: Installs the PCAPpuller GUI single-file binary from the upstream project at https://github.com/ktalons/daPCAPpuller
+- (Cask) pcappuller: Installs PCAPpuller.app (macOS) from the same upstream release
 
 ## Install
 
-- Add the tap and install the formula:
+- Add the tap and install the formula (single-file binary):
 
 ```bash
 brew tap ktalons/tap
 brew install ktalons/tap/pcappuller
+```
+
+- Or install the macOS app bundle via cask:
+
+```bash
+brew tap ktalons/tap
+brew install --cask ktalons/tap/pcappuller
 ```
 
 Notes
@@ -55,13 +63,16 @@ https://api.github.com/repos/ktalons/homebrew-tap/dispatches
 
 ## CI details
 
-Workflow: .github/workflows/update-formula.yml
+Workflow: .github/workflows/update-formula.yml (Formula auto-update)
 - Detects the latest release tag (or uses an input), finds the macOS asset, computes SHA256, and updates Formula/pcappuller.rb.
 - Shows a diff of the changes.
 - If not a dry run, commits and pushes to main.
 - After pushing, runs a macOS job to execute:
   - `brew style Formula/pcappuller.rb`
   - `brew audit --new --strict Formula/pcappuller.rb` (falls back to `--strict`)
+
+Cask updates
+- For now, the cask (Casks/pcappuller.rb) is managed manually. On new upstream releases, update the version and sha256 to match the macOS .app zip.
 
 Dry-run mode
 - Pass `dry_run=true` via workflow_dispatch to execute all steps except commit/push.
