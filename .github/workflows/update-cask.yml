@@ -1,0 +1,112 @@
+name: Update Cask
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to use (e.g., v0.3.1). Leave blank for latest"
+        required: false
+        type: string
+      asset_name:
+        description: "macOS app asset filename"
+        required: false
+        default: "PCAPpullerGUI-macos.zip"
+        type: string
+      dry_run:
+        description: "Do not commit/push; just show diff"
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    - cron: "0 6 * * *"  # daily at 06:00 UTC
+  repository_dispatch:
+    types: [update-cask]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Resolve release and asset
+        id: resolve
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_ASSET: ${{ inputs.asset_name }}
+        run: |
+          set -euxo pipefail
+          OWNER=ktalons
+          REPO=daPCAPpuller
+          if [ -n "${INPUT_TAG}" ]; then
+            REL_URL="https://api.github.com/repos/${OWNER}/${REPO}/releases/tags/${INPUT_TAG}"
+          else
+            REL_URL="https://api.github.com/repos/${OWNER}/${REPO}/releases/latest"
+          fi
+          REL_JSON=$(curl -sS -H "Accept: application/vnd.github+json" "$REL_URL")
+          TAG=$(echo "$REL_JSON" | jq -r .tag_name)
+          VERSION=${TAG#v}
+          ASSET_NAME=${INPUT_ASSET}
+          ASSET_URL=$(echo "$REL_JSON" | jq -r --arg NAME "$ASSET_NAME" '.assets[] | select(.name==$NAME) | .browser_download_url')
+          if [ -z "$ASSET_URL" ] || [ "$ASSET_URL" = "null" ]; then
+            echo "Requested asset '$ASSET_NAME' not found in $TAG" >&2
+            echo "Available assets:" >&2
+            echo "$REL_JSON" | jq -r '.assets[].name' >&2
+            exit 1
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "asset_url=$ASSET_URL" >> $GITHUB_OUTPUT
+
+      - name: Compute SHA256
+        id: sha
+        run: |
+          set -euxo pipefail
+          curl -L "${{ steps.resolve.outputs.asset_url }}" -o /tmp/asset.zip
+          SHA=$(sha256sum /tmp/asset.zip | awk '{print $1}')
+          echo "sha256=$SHA" >> $GITHUB_OUTPUT
+
+      - name: Update cask file
+        run: |
+          set -euxo pipefail
+          FILE="Casks/pcappuller.rb"
+          # Update version
+          sed -i -E "s/^\s*version\s+\".*\"/  version \"${{ steps.resolve.outputs.version }}\"/" "$FILE"
+          # Update sha256
+          sed -i -E "s/^\s*sha256\s+\".*\"/  sha256 \"${{ steps.sha.outputs.sha256 }}\"/" "$FILE"
+          git --no-pager diff
+
+      - name: Commit and push changes
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euxo pipefail
+          if git status --porcelain | grep -q Casks/pcappuller.rb; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add Casks/pcappuller.rb
+            git commit -m "cask(pcappuller): bump to v${{ steps.resolve.outputs.version }}"
+            git push origin HEAD:main
+          else
+            echo "No changes to commit"
+          fi
+
+  audit:
+    needs: update
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Homebrew style (cask)
+        run: brew style Casks/pcappuller.rb
+      - name: Homebrew audit (cask)
+        run: |
+          set -euxo pipefail
+          brew audit --cask --online --strict Casks/pcappuller.rb || brew audit --cask --online Casks/pcappuller.rb
