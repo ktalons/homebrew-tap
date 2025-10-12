@@ -1,0 +1,145 @@
+name: Update Formula (Linux)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to use (e.g., v0.3.1). Leave blank for latest"
+        required: false
+        type: string
+      asset_name:
+        description: "Linux CLI asset filename"
+        required: false
+        default: "PCAPpullerGUI-linux"
+        type: string
+      dry_run:
+        description: "Do not commit/push; just show diff"
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    - cron: "0 6 * * *"  # daily at 06:00 UTC
+  repository_dispatch:
+    types: [update-formula-linux]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: Resolve release and asset (Linux)
+        id: resolve
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_ASSET: ${{ inputs.asset_name }}
+        run: |
+          set -euxo pipefail
+          OWNER=ktalons
+          REPO=daPCAPpuller
+          if [ -n "${INPUT_TAG}" ]; then
+            REL_URL="https://api.github.com/repos/${OWNER}/${REPO}/releases/tags/${INPUT_TAG}"
+          else
+            REL_URL="https://api.github.com/repos/${OWNER}/${REPO}/releases/latest"
+          fi
+          REL_JSON=$(curl -sS -H "Accept: application/vnd.github+json" "$REL_URL")
+          TAG=$(echo "$REL_JSON" | jq -r .tag_name)
+          VERSION=${TAG#v}
+          ASSET_NAME=${INPUT_ASSET}
+          ASSET_URL=$(echo "$REL_JSON" | jq -r --arg NAME "$ASSET_NAME" '.assets[] | select(.name==$NAME) | .browser_download_url')
+          if [ -z "$ASSET_URL" ] || [ "$ASSET_URL" = "null" ]; then
+            echo "Requested asset '$ASSET_NAME' not found in $TAG" >&2
+            echo "Available assets:" >&2
+            echo "$REL_JSON" | jq -r '.assets[].name' >&2
+            exit 1
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "asset_url=$ASSET_URL" >> $GITHUB_OUTPUT
+
+      - name: Compute SHA256
+        id: sha
+        run: |
+          set -euxo pipefail
+          curl -L "${{ steps.resolve.outputs.asset_url }}" -o /tmp/asset
+          SHA=$(sha256sum /tmp/asset | awk '{print $1}')
+          echo "sha256=$SHA" >> $GITHUB_OUTPUT
+
+      - name: Update Formula (Linux block + version)
+        run: |
+          set -euxo pipefail
+          FILE="Formula/pcappuller.rb"
+          VERSION="${{ steps.resolve.outputs.version }}"
+          URL="${{ steps.resolve.outputs.asset_url }}"
+          SHA="${{ steps.sha.outputs.sha256 }}"
+
+          # Update top-level version line
+          sed -i -E "s/^  version \".*\"/  version \"${VERSION}\"/" "$FILE"
+
+          # Update URL and sha256 inside the on_linux block only
+          awk -v new_url="$URL" -v new_sha="$SHA" '
+            BEGIN { in_linux=0 }
+            /^[ \t]*on_linux do[ \t]*$/ { in_linux=1 }
+            in_linux==1 && /^[ \t]*url \"/ { sub(/url \".*/, "url \"" new_url "\""); print; next }
+            in_linux==1 && /^[ \t]*sha256 \"/ { sub(/sha256 \".*/, "sha256 \"" new_sha "\""); print; next }
+            in_linux==1 && /^[ \t]*end[ \t]*$/ { in_linux=0 }
+            { print }
+          ' "$FILE" > "$FILE.tmp" && mv "$FILE.tmp" "$FILE"
+
+          git --no-pager diff -- "$FILE"
+
+      - name: Commit and push changes
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euxo pipefail
+          if git status --porcelain | grep -q "Formula/pcappuller.rb"; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add Formula/pcappuller.rb
+            git commit -m "formula(pcappuller): bump Linux URL/SHA and version to v${{ steps.resolve.outputs.version }}"
+            git pull --rebase origin main || true
+            git push origin HEAD:main
+          else
+            echo "No changes to commit"
+          fi
+
+  audit:
+    needs: update
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Homebrew style (formula)
+        run: |
+          set -euxo pipefail
+          brew update --quiet || true
+          OWNER_REPO="${{ github.repository }}"
+          OWNER="${OWNER_REPO%%/*}"
+          REPO="${OWNER_REPO##*/}"
+          SHORT_TAP="${REPO#homebrew-}"
+          FORMULA="pcappuller"
+          TOKEN="${OWNER}/${SHORT_TAP}/${FORMULA}"
+          brew tap "${OWNER}/${SHORT_TAP}" "https://github.com/${OWNER}/homebrew-${SHORT_TAP}.git" || true
+          brew style --formula "${TOKEN}" || brew style --formula "${FORMULA}"
+      - name: Homebrew audit (formula)
+        run: |
+          set -euxo pipefail
+          OWNER_REPO="${{ github.repository }}"
+          OWNER="${OWNER_REPO%%/*}"
+          REPO="${OWNER_REPO##*/}"
+          SHORT_TAP="${REPO#homebrew-}"
+          FORMULA="pcappuller"
+          TOKEN="${OWNER}/${SHORT_TAP}/${FORMULA}"
+          brew audit --new --strict "${TOKEN}" || \
+          brew audit --strict "${TOKEN}" || \
+          brew audit --new --strict "${FORMULA}" || \
+          brew audit --strict "${FORMULA}"
