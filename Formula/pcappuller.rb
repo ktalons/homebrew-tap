@@ -1,8 +1,8 @@
 class Pcappuller < Formula
   desc "Fast PCAP window selector, merger, and trimmer (CLI single-binary)"
   homepage "https://github.com/ktalons/daPCAPpuller"
-  version "0.3.1"
   url "https://github.com/ktalons/daPCAPpuller/releases/download/v0.3.1/PCAPpullerGUI-linux"
+  version "0.3.1"
   license "MIT"
 
   sha256 "0b2bd1715756ee61e823ba9ff3e907f2304c8991f7cceff90ea42e51ed5126c7"
