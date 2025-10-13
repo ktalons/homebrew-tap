@@ -15,8 +15,8 @@ cask "pcappuller" do
 
   zap trash: [
     "~/Library/Application Support/pcappuller",
-    "~/Library/Preferences/com.ktalons.PCAPpuller.plist",
     "~/Library/Caches/pcappuller",
+    "~/Library/Preferences/com.ktalons.PCAPpuller.plist",
   ]
 
   caveats <<~EOS
