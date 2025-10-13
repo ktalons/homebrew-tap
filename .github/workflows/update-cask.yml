@@ -56,7 +56,10 @@ jobs:
           # Get tag and version first
           TAG=$(curl -sS -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${GITHUB_TOKEN}" "$REL_URL" | jq -r .tag_name)
           VERSION=${TAG#v}
-          ASSET_NAME=${INPUT_ASSET:-PCAPpullerGUI-macos.zip}
+          ASSET_NAME="${INPUT_ASSET:-PCAPpullerGUI-macos.zip}"
+          echo "DEBUG: INPUT_ASSET='${INPUT_ASSET:-}'"
+          echo "DEBUG: ASSET_NAME='$ASSET_NAME'"
+          echo "DEBUG: TAG='$TAG'"
           
           # Get asset URL directly without storing full JSON
           ASSET_URL=$(curl -sS -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${GITHUB_TOKEN}" "$REL_URL" | \
