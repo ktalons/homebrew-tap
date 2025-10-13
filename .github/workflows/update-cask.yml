@@ -51,15 +51,25 @@ jobs:
           else
             REL_URL="https://api.github.com/repos/${OWNER}/${REPO}/releases/latest"
           fi
-          REL_JSON=$(curl -sS -H "Accept: application/vnd.github+json" "$REL_URL")
-          TAG=$(echo "$REL_JSON" | jq -r .tag_name)
+          # Get tag and version first
+          TAG=$(curl -sS -H "Accept: application/vnd.github+json" "$REL_URL" | jq -r .tag_name)
           VERSION=${TAG#v}
           ASSET_NAME=${INPUT_ASSET:-PCAPpullerGUI-macos.zip}
-          ASSET_URL=$(echo "$REL_JSON" | jq -r --arg NAME "$ASSET_NAME" '.assets[] | select(.name==$NAME) | .browser_download_url')
+          
+          # Get asset URL directly without storing full JSON
+          ASSET_URL=$(curl -sS -H "Accept: application/vnd.github+json" "$REL_URL" | \
+            jq -r --arg NAME "$ASSET_NAME" '.assets[] | select(.name==$NAME) | .browser_download_url')
+          
+          # If exact match fails, try case-insensitive match for macOS assets
+          if [ -z "$ASSET_URL" ] || [ "$ASSET_URL" = "null" ]; then
+            ASSET_URL=$(curl -sS -H "Accept: application/vnd.github+json" "$REL_URL" | \
+              jq -r '.assets[] | select(.name | test(".*macos.*\\.zip$"; "i")) | .browser_download_url' | head -1)
+          fi
+          
           if [ -z "$ASSET_URL" ] || [ "$ASSET_URL" = "null" ]; then
             echo "Requested asset '$ASSET_NAME' not found in $TAG" >&2
             echo "Available assets:" >&2
-            echo "$REL_JSON" | jq -r '.assets[].name' >&2
+            curl -sS -H "Accept: application/vnd.github+json" "$REL_URL" | jq -r '.assets[].name' >&2
             exit 1
           fi
           echo "tag=$TAG" >> $GITHUB_OUTPUT
