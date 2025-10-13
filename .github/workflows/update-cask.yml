@@ -46,7 +46,7 @@ jobs:
           set -euxo pipefail
           OWNER=ktalons
           REPO=daPCAPpuller
-          if [ -n "${INPUT_TAG}" ]; then
+          if [ -n "${INPUT_TAG:-}" ]; then
             REL_URL="https://api.github.com/repos/${OWNER}/${REPO}/releases/tags/${INPUT_TAG}"
           else
             REL_URL="https://api.github.com/repos/${OWNER}/${REPO}/releases/latest"
@@ -54,7 +54,7 @@ jobs:
           REL_JSON=$(curl -sS -H "Accept: application/vnd.github+json" "$REL_URL")
           TAG=$(echo "$REL_JSON" | jq -r .tag_name)
           VERSION=${TAG#v}
-          ASSET_NAME=${INPUT_ASSET}
+          ASSET_NAME=${INPUT_ASSET:-PCAPpullerGUI-macos.zip}
           ASSET_URL=$(echo "$REL_JSON" | jq -r --arg NAME "$ASSET_NAME" '.assets[] | select(.name==$NAME) | .browser_download_url')
           if [ -z "$ASSET_URL" ] || [ "$ASSET_URL" = "null" ]; then
             echo "Requested asset '$ASSET_NAME' not found in $TAG" >&2

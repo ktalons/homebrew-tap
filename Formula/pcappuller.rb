@@ -1,32 +1,33 @@
 class Pcappuller < Formula
   desc "Fast PCAP window selector, merger, and trimmer (CLI single-binary)"
   homepage "https://github.com/ktalons/daPCAPpuller"
-  license "MIT"
   version "0.3.1"
+  license "MIT"
 
-  on_linux do
-    url "https://github.com/ktalons/daPCAPpuller/releases/download/v#{version}/PCAPpullerGUI-linux"
-    sha256 "0b2bd1715756ee61e823ba9ff3e907f2304c8991f7cceff90ea42e51ed5126c7"
+  url "https://github.com/ktalons/daPCAPpuller/releases/download/v#{version}/PCAPpullerGUI-linux"
+  sha256 "0b2bd1715756ee61e823ba9ff3e907f2304c8991f7cceff90ea42e51ed5126c7"
 
-    def install
+  def install
+    if OS.linux?
       bin.install "PCAPpullerGUI-linux" => "pcappuller-gui"
-    end
-
-    test do
-      system bin/"pcappuller-gui", "--help"
+    else
+      odie "This formula installs only the Linux CLI binary. " \
+           "On macOS, use the cask: brew install --cask ktalons/tap/pcappuller"
     end
   end
 
-  on_macos do
-    def install
-      odie "This formula installs only the Linux CLI binary. On macOS, use the cask: brew install --cask ktalons/tap/pcappuller"
-    end
+  test do
+    return unless OS.linux?
 
-    def caveats
-      <<~EOS
-        On macOS, install the app bundle via cask:
-          brew install --cask ktalons/tap/pcappuller
-      EOS
-    end
+    system bin/"pcappuller-gui", "--help"
+  end
+
+  def caveats
+    return unless OS.mac?
+
+    <<~EOS
+      On macOS, install the app bundle via cask:
+        brew install --cask ktalons/tap/pcappuller
+    EOS
   end
 end
