@@ -3,9 +3,8 @@ class Pcappuller < Formula
   homepage "https://github.com/ktalons/daPCAPpuller"
   url "https://github.com/ktalons/daPCAPpuller/releases/download/v0.3.1/PCAPpullerGUI-linux"
   version "0.3.1"
-  license "MIT"
-
   sha256 "0b2bd1715756ee61e823ba9ff3e907f2304c8991f7cceff90ea42e51ed5126c7"
+  license "MIT"
 
   def install
     if OS.linux?
