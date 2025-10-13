@@ -15,12 +15,6 @@ class Pcappuller < Formula
     end
   end
 
-  test do
-    return unless OS.linux?
-
-    system bin/"pcappuller-gui", "--help"
-  end
-
   def caveats
     return unless OS.mac?
 
@@ -28,5 +22,11 @@ class Pcappuller < Formula
       On macOS, install the app bundle via cask:
         brew install --cask ktalons/tap/pcappuller
     EOS
+  end
+
+  test do
+    return unless OS.linux?
+
+    system bin/"pcappuller-gui", "--help"
   end
 end
