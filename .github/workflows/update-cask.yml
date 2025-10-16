@@ -124,4 +124,4 @@ jobs:
       - name: Homebrew audit (cask)
         run: |
           set -euxo pipefail
-          brew audit --cask --online --strict Casks/pcappuller.rb || brew audit --cask --online Casks/pcappuller.rb
+          brew audit --cask --online --strict pcappuller || brew audit --cask --online --strict pcappuller
