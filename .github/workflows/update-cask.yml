@@ -119,9 +119,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: main  # Ensure we get the updated cask file
+      
+      - name: Add local tap
+        run: |
+          set -euxo pipefail
+          # Add the current directory as a tap
+          brew tap --force ktalons/tap "$PWD"
+      
       - name: Homebrew style (cask)
-        run: brew style Casks/pcappuller.rb
+        run: brew style --cask ktalons/tap/pcappuller
+      
       - name: Homebrew audit (cask)
         run: |
           set -euxo pipefail
-             brew install --cask ./Casks/pcappuller.rb || brew audit --cask --online --strict pcappuller
+          brew audit --cask --online --strict ktalons/tap/pcappuller || brew audit --cask --online ktalons/tap/pcappuller
