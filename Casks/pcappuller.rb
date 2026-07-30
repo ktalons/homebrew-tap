@@ -1,12 +1,12 @@
 cask "pcappuller" do
-  version "0.3.1"
-  sha256 "4b56fb250466f3a71b03dc952fb90fcac45a845690590d660e9b103c9da6bf4c"
+  version "0.4.0"
+  sha256 "d98c1ab0e16a6b3c7492275f96750454902a2751d64799079799aaaf284826da"
 
-  url "https://github.com/ktalons/daPCAPpuller/releases/download/v#{version}/PCAPpullerGUI-macos.zip",
-      verified: "github.com/ktalons/daPCAPpuller/"
+  url "https://github.com/ktalons/PCAPpuller/releases/download/v#{version}/PCAPpullerGUI-macos.zip",
+      verified: "github.com/ktalons/PCAPpuller/"
   name "PCAPpuller"
   desc "Fast PCAP window selector, merger, trimmer, and cleaner (GUI)"
-  homepage "https://github.com/ktalons/daPCAPpuller"
+  homepage "https://github.com/ktalons/PCAPpuller"
 
   # App built with PyInstaller, compatible with recent macOS; adjust if you need older
   depends_on macos: ">= :catalina"
