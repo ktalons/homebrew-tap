@@ -8,8 +8,9 @@ cask "pcappuller" do
   desc "Fast PCAP window selector, merger, trimmer, and cleaner (GUI)"
   homepage "https://github.com/ktalons/PCAPpuller"
 
-  # App built with PyInstaller, compatible with recent macOS; adjust if you need older
-  depends_on macos: ">= :catalina"
+  # App built with PyInstaller, compatible with recent macOS; adjust if you need older.
+  # Bare symbol means "this release or later" (Homebrew parses it with a ">=" comparator).
+  depends_on macos: :catalina
 
   app "PCAPpullerGUI.app"
 
