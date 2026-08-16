@@ -25,7 +25,9 @@ jobs:
           TAG="${{ github.event.inputs.tag || github.event.client_payload.tag }}"
           VERSION="${TAG#v}"
           URL="https://github.com/ktalons/PCAPpuller/releases/download/${TAG}/PCAPpullerGUI-macos.zip"
-          SHA=$(curl -sL "$URL" | sha256sum | awk '{print $1}')
+          # -f: a missing asset (bad tag, or release CI not finished yet) fails the step
+          # instead of silently pinning the sha256 of GitHub's 404 page.
+          SHA=$(curl -fsSL --retry 3 "$URL" | sha256sum | awk '{print $1}')
           sed -i -E "s|^  version \".*\"|  version \"${VERSION}\"|" Casks/pcappuller.rb
           sed -i -E "s|^  sha256 \".*\"|  sha256 \"${SHA}\"|" Casks/pcappuller.rb
           git diff Casks/pcappuller.rb
