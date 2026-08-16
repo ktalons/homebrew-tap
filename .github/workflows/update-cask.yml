@@ -34,8 +34,18 @@ jobs:
 
       - name: Commit and push
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Casks/pcappuller.rb
           git commit -m "pcappuller: cask ${{ github.event.inputs.tag || github.event.client_payload.tag }}" || exit 0
-          git push
+          # Update Cask and Update Formula both fire on the same release dispatch, so the
+          # other one may have pushed first. Rebase onto origin/main and retry the push.
+          for attempt in 1 2 3; do
+            git pull --rebase origin main
+            git push && exit 0
+            echo "push rejected (attempt ${attempt}), retrying"
+            sleep $((attempt * 5))
+          done
+          echo "::error::git push failed after 3 attempts"
+          exit 1
