@@ -16,8 +16,3 @@ first launch.
 On a new PCAPpuller release, run the **Update Formula** and **Update Cask**
 workflows from the Actions tab with the release tag (e.g. `v0.4.0`). Each
 recomputes the sha256 from the published artifact and commits the bump.
-
-## Links
-
-- Project: <https://github.com/ktalons/PCAPpuller>
-- Project page: <https://ktalons.github.io/projects/pcappuller/>
